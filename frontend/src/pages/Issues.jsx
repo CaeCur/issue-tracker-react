@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
+
+//components
+import { useIssueContext } from "../hooks/useIssueContext";
 
 // MUI
-import PropTypes from "prop-types";
 import { alpha } from "@mui/material/styles";
 import {
   Box,
@@ -23,34 +26,7 @@ import {
   Switch,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
-import FilterListIcon from "@mui/icons-material/FilterList";
 import { visuallyHidden } from "@mui/utils";
-
-function createData(name, calories, fat, carbs, protein) {
-  return {
-    name,
-    calories,
-    fat,
-    carbs,
-    protein,
-  };
-}
-
-const rows = [
-  createData("Cupcake", "This is a details test", 3.7, 67, 4.3),
-  createData("Donut", "This is a details test", 25.0, 51, 4.9),
-  createData("Eclair", "This is a details test", 16.0, 24, 6.0),
-  createData("Frozen yoghurt", "This is a details test", 6.0, 24, 4.0),
-  createData("Gingerbread", "This is a details test", 16.0, 49, 3.9),
-  createData("Honeycomb", "This is a details test", 3.2, 87, 6.5),
-  createData("Ice cream sandwich", "This is a details test", 9.0, 37, 4.3),
-  createData("Jelly Bean", "This is a details test", 0.0, 94, 0.0),
-  createData("KitKat", "This is a details test", 26.0, 65, 7.0),
-  createData("Lollipop", "This is a details test", 0.2, 98, 0.0),
-  createData("Marshmallow", "This is a details test", 0, 81, 2.0),
-  createData("Nougat", "This is a details test", 19.0, 9, 37.0),
-  createData("Oreo", "This is a details test", 18.0, 63, 4.0),
-];
 
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
@@ -75,44 +51,50 @@ const headCells = [
     disablePadding: true,
     label: "Title",
   },
+
+  {
+    id: "dueDate",
+    numeric: false,
+    disablePadding: false,
+    label: "Due Date",
+  },
+  {
+    id: "priority",
+    numeric: false,
+    disablePadding: false,
+    label: "Priority",
+  },
+  {
+    id: "status",
+    numeric: false,
+    disablePadding: false,
+    label: "Status",
+  },
+  {
+    id: "createdBy",
+    numeric: false,
+    disablePadding: false,
+    label: "Created By",
+  },
+  {
+    id: "assignedTo",
+    numeric: false,
+    disablePadding: false,
+    label: "Assigned To",
+  },
   {
     id: "details",
     numeric: false,
     disablePadding: false,
     label: "Details",
   },
-  {
-    id: "status",
-    numeric: true,
-    disablePadding: false,
-    label: "Status",
-  },
-  {
-    id: "createdBy",
-    numeric: true,
-    disablePadding: false,
-    label: "Created By",
-  },
-  {
-    id: "assignedTo",
-    numeric: true,
-    disablePadding: false,
-    label: "Assigned To",
-  },
-  {
-    id: "dueDate",
-    numeric: true,
-    disablePadding: false,
-    label: "Due Date",
-  },
-  {
-    id: "priority",
-    numeric: true,
-    disablePadding: false,
-    label: "Priority",
-  },
 ];
 
+/*****
+ *
+ * Table Head
+ *
+ *****/
 function EnhancedTableHead(props) {
   const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort } = props;
   const createSortHandler = (property) => (event) => {
@@ -161,6 +143,11 @@ function EnhancedTableHead(props) {
   );
 }
 
+/*****
+ *
+ * Table Toolbar
+ *
+ *****/
 const EnhancedTableToolbar = (props) => {
   const { numSelected } = props;
 
@@ -175,43 +162,43 @@ const EnhancedTableToolbar = (props) => {
         }),
       }}
     >
+      {/* If items are selected, render title as selection info.
+      If no items are selected, render title as "Issues" */}
       {numSelected > 0 ? (
         <Typography sx={{ flex: "1 1 100%" }} color="inherit" variant="subtitle1" component="div">
           {numSelected} selected
         </Typography>
       ) : (
-        <Typography sx={{ flex: "1 1 100%" }} variant="h6" id="tableTitle" component="div">
+        <Typography
+          sx={{ flex: "1 1 100%", textAlign: "center" }}
+          variant="h6"
+          id="tableTitle"
+          component="div"
+        >
           Issues
         </Typography>
       )}
 
+      {/* If items are selected, render delete button.
+      If no items are selected, render nothing (TODO: implement search) */}
       {numSelected > 0 ? (
         <Tooltip title="Delete">
           <IconButton>
             <DeleteIcon />
           </IconButton>
         </Tooltip>
-      ) : (
-        <Tooltip title="Filter list">
-          <IconButton>
-            <FilterListIcon />
-          </IconButton>
-        </Tooltip>
-      )}
+      ) : null}
     </Toolbar>
   );
 };
 
-EnhancedTableToolbar.propTypes = {
-  numSelected: PropTypes.number.isRequired,
-};
-
 /*****
-
-MAIN COMPONENT
-
-*****/
+ *
+ * Main Component
+ *
+ *****/
 export default function Issues() {
+  const { issues, dispatch } = useIssueContext();
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState("calories");
   const [selected, setSelected] = useState([]);
@@ -219,25 +206,45 @@ export default function Issues() {
   const [dense, setDense] = useState(false);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
+  // Fetch issues from API and add to context
+  useEffect(() => {
+    const fetchIssues = async () => {
+      const response = await axios.get("/api/issues");
+
+      if (response.status === 200) {
+        dispatch({ type: "SET_ISSUES", payload: response.data });
+      }
+    };
+
+    fetchIssues();
+  }, [dispatch]);
+
+  // handle property sorting
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
     setOrderBy(property);
   };
 
+  // handle click of "select all" checkbox
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = rows.map((n) => n.name);
+      const newSelecteds = issues.map((n) => n.title);
       setSelected(newSelecteds);
       return;
     }
     setSelected([]);
   };
 
+  // Handle click of item.
   const handleClick = (event, name) => {
+    // if item exists in "selected" array, return item's index. Otherwise, return -1.
     const selectedIndex = selected.indexOf(name);
+    // Create new placeholder selected array
     let newSelected = [];
 
+    // If item is not in selected array, add it.
+    // If item is already in selected array, remove it. Account for array postion.
     if (selectedIndex === -1) {
       newSelected = newSelected.concat(selected, name);
     } else if (selectedIndex === 0) {
@@ -251,6 +258,7 @@ export default function Issues() {
       );
     }
 
+    // set the actual selected array with the value of the new array
     setSelected(newSelected);
   };
 
@@ -270,43 +278,40 @@ export default function Issues() {
   const isSelected = (name) => selected.indexOf(name) !== -1;
 
   // Avoid a layout jump when reaching the last page with empty rows.
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
+  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - issues.length) : 0;
 
   return (
     <Box sx={{ width: "100%" }}>
-      <Paper sx={{ width: "100%", mb: 2 }}>
+      <Paper sx={{ width: "100%", mb: 1 }}>
         <EnhancedTableToolbar numSelected={selected.length} />
         <TableContainer>
-          <Table
-            sx={{ minWidth: 750 }}
-            aria-labelledby="tableTitle"
-            size={dense ? "small" : "medium"}
-          >
+          <Table sx={{ minWidth: 750 }} aria-labelledby="Issues" size={dense ? "small" : "medium"}>
             <EnhancedTableHead
               numSelected={selected.length}
               order={order}
               orderBy={orderBy}
               onSelectAllClick={handleSelectAllClick}
               onRequestSort={handleRequestSort}
-              rowCount={rows.length}
+              rowCount={issues.length}
             />
+
             <TableBody>
-              {rows
+              {issues
                 .slice()
                 .sort(getComparator(order, orderBy))
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((row, index) => {
-                  const isItemSelected = isSelected(row.name);
+                .map((issue, index) => {
+                  const isItemSelected = isSelected(issue.title);
                   const labelId = `enhanced-table-checkbox-${index}`;
 
                   return (
                     <TableRow
                       hover
-                      onClick={(event) => handleClick(event, row.name)}
+                      onClick={(event) => handleClick(event, issue.title)}
                       role="checkbox"
                       aria-checked={isItemSelected}
                       tabIndex={-1}
-                      key={row.name}
+                      key={issue._id}
                       selected={isItemSelected}
                     >
                       <TableCell padding="checkbox">
@@ -318,13 +323,33 @@ export default function Issues() {
                           }}
                         />
                       </TableCell>
+
+                      {/* Issue Title */}
                       <TableCell component="th" id={labelId} scope="row" padding="none">
-                        {row.name}
+                        {issue.title}
                       </TableCell>
-                      <TableCell align="left">{row.calories}</TableCell>
-                      <TableCell align="right">{row.fat}</TableCell>
-                      <TableCell align="right">{row.carbs}</TableCell>
-                      <TableCell align="right">{row.protein}</TableCell>
+                      {/* Issue due date */}
+                      <TableCell align="left">{issue.dueDate}</TableCell>
+                      {/* Issue priority */}
+                      <TableCell align="left">{issue.priority}</TableCell>
+                      {/* Issue status */}
+                      <TableCell align="left">{issue.status}</TableCell>
+                      {/* Issue created by */}
+                      <TableCell align="left">{issue.createdBy}</TableCell>
+                      {/* Issue assigned to */}
+                      <TableCell align="left">{issue.assignedTo}</TableCell>
+                      {/* Issue details */}
+                      <TableCell
+                        align="left"
+                        sx={{
+                          whiteSpace: "nowrap",
+                          textOverflow: "ellipsis",
+                          overflow: "hidden",
+                          maxWidth: 300,
+                        }}
+                      >
+                        {issue.details}
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -343,11 +368,12 @@ export default function Issues() {
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={rows.length}
+          count={issues.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
+          labelRowsPerPage="Issues per page:"
         />
       </Paper>
       <FormControlLabel
