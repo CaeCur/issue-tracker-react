@@ -14,7 +14,7 @@ function App() {
     <div className="App">
       <BrowserRouter>
         <Navbar />
-        <Container>
+        <Container maxWidth="lg" disableGutters>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/issues" element={<Issues />} />
