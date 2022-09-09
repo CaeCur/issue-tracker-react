@@ -90,7 +90,7 @@ export default function Navbar() {
               textDecoration: "none",
             }}
           >
-            DESK
+            Issues
           </Typography>
 
           {/* desktop nav menu */}

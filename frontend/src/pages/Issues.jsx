@@ -149,7 +149,7 @@ function EnhancedTableHead(props) {
  *
  *****/
 const EnhancedTableToolbar = (props) => {
-  const { numSelected } = props;
+  const { numSelected, selected } = props;
 
   return (
     <Toolbar
@@ -229,7 +229,7 @@ export default function Issues() {
   // handle click of "select all" checkbox
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = issues.map((n) => n.title);
+      const newSelecteds = issues.map((n) => n._id);
       setSelected(newSelecteds);
       return;
     }
@@ -237,16 +237,16 @@ export default function Issues() {
   };
 
   // Handle click of item.
-  const handleClick = (event, name) => {
+  const handleClickSelect = (event, issueId) => {
     // if item exists in "selected" array, return item's index. Otherwise, return -1.
-    const selectedIndex = selected.indexOf(name);
+    const selectedIndex = selected.indexOf(issueId);
     // Create new placeholder selected array
     let newSelected = [];
 
     // If item is not in selected array, add it.
     // If item is already in selected array, remove it. Account for array postion.
     if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, name);
+      newSelected = newSelected.concat(selected, issueId);
     } else if (selectedIndex === 0) {
       newSelected = newSelected.concat(selected.slice(1));
     } else if (selectedIndex === selected.length - 1) {
@@ -275,7 +275,7 @@ export default function Issues() {
     setDense(event.target.checked);
   };
 
-  const isSelected = (name) => selected.indexOf(name) !== -1;
+  const isSelected = (issueId) => selected.indexOf(issueId) !== -1;
 
   // Avoid a layout jump when reaching the last page with empty rows.
   const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - issues.length) : 0;
@@ -301,13 +301,13 @@ export default function Issues() {
                 .sort(getComparator(order, orderBy))
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((issue, index) => {
-                  const isItemSelected = isSelected(issue.title);
+                  const isItemSelected = isSelected(issue._id);
                   const labelId = `enhanced-table-checkbox-${index}`;
 
                   return (
                     <TableRow
                       hover
-                      onClick={(event) => handleClick(event, issue.title)}
+                      onClick={(event) => handleClickSelect(event, issue._id)}
                       role="checkbox"
                       aria-checked={isItemSelected}
                       tabIndex={-1}
