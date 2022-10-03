@@ -12,7 +12,6 @@ const issueSchema = new mongoose.Schema(
     },
     status: {
       type: Number,
-      required: [true, "Status is required"],
       default: 0,
     },
     onVersion: {
